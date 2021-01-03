@@ -23,12 +23,20 @@ import os
 import hashlib
 import sys
 
+from .win32 import Win32File
+
 CHUNK_SIZE = 4096 * 2
-INT_10E9 = 1000000000
+
+NANOSECONDS_IN_A_SECOND = 1_000_000_000
 
 
-def formatTimestamp(ts):
-    return "{0}.{1:09d}".format(ts // INT_10E9, ts % INT_10E9) if ts else None
+def formatTimestamp(time_ns):
+    if time_ns == None:
+        return None
+
+    seconds = time_ns // NANOSECONDS_IN_A_SECOND
+    nanoseconds = time_ns % NANOSECONDS_IN_A_SECOND
+    return "{0}.{1:09d}".format(seconds, nanoseconds)
 
 
 def getStoredSha256(filename):
@@ -43,20 +51,20 @@ def getStoredTimestamp(filename):
     try:
         with open(filename + ':shatag.ts:$DATA', 'r') as f:
             seconds, nanoseconds = tuple(map(int, f.read().split('.')))
-            return seconds * INT_10E9 + nanoseconds
+            return seconds * NANOSECONDS_IN_A_SECOND + nanoseconds
     except FileNotFoundError:
         return None
 
 
 def writeSha256(filename, sha256):
-    with open(filename + ':shatag.sha256:$DATA', 'w') as f:
-        return f.write(sha256)
+    with Win32File(filename + ':shatag.sha256:$DATA', 'wb') as f:
+        return f.write(sha256.encode('ascii'))
 
 
-def writeTimestamp(filename, ts):
-    with open(filename + ':shatag.ts:$DATA', 'w') as f:
-        f.write(formatTimestamp(ts))
-    os.utime(filename, ns=(ts, ts))
+def writeTimestamp(filename, time_ns):
+    with Win32File(filename + ':shatag.ts:$DATA', 'wb') as f:
+        f.write(formatTimestamp(time_ns).encode('ascii'))
+        f.touch(time_ns)
 
 
 def getActualTimestamp(filename):
@@ -84,7 +92,7 @@ def main(argv=None):
         parser.print_usage()
         return 1
 
-    filename = args.filename
+    filename = os.path.abspath(args.filename)
 
     stored_ts = getStoredTimestamp(filename)
     stored_sha256 = getStoredSha256(filename)
