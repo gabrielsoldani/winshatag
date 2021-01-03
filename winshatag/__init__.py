@@ -76,7 +76,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("filename", metavar='FILE', help='file to checksum')
 
 
-def main(args):
+def main(args=None):
     args = parser.parse_args(args)
 
     if args.filename == []:
@@ -129,7 +129,3 @@ def main(args):
         return 5
     else:
         return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
