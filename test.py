@@ -67,6 +67,11 @@ ts = os.stat(filename).st_mtime_ns
 exitcode = winshatag.main([filename])
 assert exitcode == 0
 assert winshatag.getStoredTimestamp(filename) == ts
+print(winshatag.getActualTimestamp(filename))
+
+print("*** No changes made to file ***")
+exitcode = winshatag.main([filename])
+assert exitcode == 0
 
 print("*** Silently corrupting 100-byte file ***")
 with open(filename, 'ab+') as f:

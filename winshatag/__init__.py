@@ -56,6 +56,7 @@ def writeSha256(filename, sha256):
 def writeTimestamp(filename, ts):
     with open(filename + ':shatag.ts:$DATA', 'w') as f:
         f.write(formatTimestamp(ts))
+    os.utime(filename, ns=(ts, ts))
 
 
 def getActualTimestamp(filename):
@@ -76,8 +77,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("filename", metavar='FILE', help='file to checksum')
 
 
-def main(args=None):
-    args = parser.parse_args(args)
+def main(argv=None):
+    args = parser.parse_args(argv)
 
     if args.filename == []:
         parser.print_usage()
@@ -109,7 +110,7 @@ def main(args=None):
                 # must_update = True
         else:
             # Hashes are the same.
-            print("<ok> %s", filename)
+            print("<ok>", filename)
     else:
         # Modified timestamps are different.
         print("<outdated>", filename)
