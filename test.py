@@ -62,7 +62,7 @@ assert winshatag.getStoredSha256(
 print("*** Modifying date in new 100-byte file ***")
 ts = 1909669684252460189
 os.utime(filename, ns=(ts, ts))
-ts = int(os.stat(filename).st_mtime)
+ts = os.stat(filename).st_mtime_ns
 
 exitcode = winshatag.main([filename])
 assert exitcode == 0
@@ -77,7 +77,7 @@ print("*** Silently corrupting 100-byte file ***")
 with open(filename, 'ab+') as f:
     f.seek(0)
     f.write(bytes(range(0, 200, 2)))
-os.utime(filename, times=(ts, ts))
+os.utime(filename, ns=(ts, ts))
 
 exitcode = winshatag.main([filename])
 assert exitcode == 5
