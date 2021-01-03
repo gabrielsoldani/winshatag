@@ -22,13 +22,17 @@ import argparse
 import os
 import hashlib
 import sys
+from datetime import datetime
+
+from win32 import win32file
+from win32 import win32api
+import pywintypes
 
 CHUNK_SIZE = 4096 * 2
-INT_10E9 = 1000000000
 
 
 def formatTimestamp(ts):
-    return "{0}.{1:09d}".format(ts // INT_10E9, ts % INT_10E9) if ts else None
+    return "{0}.{1:09d}".format(ts, 0) if ts else None
 
 
 def getStoredSha256(filename):
@@ -42,8 +46,8 @@ def getStoredSha256(filename):
 def getStoredTimestamp(filename):
     try:
         with open(filename + ':shatag.ts:$DATA', 'r') as f:
-            seconds, nanoseconds = tuple(map(int, f.read().split('.')))
-            return seconds * INT_10E9 + nanoseconds
+            seconds, _ = tuple(map(int, f.read().split('.')))
+            return seconds
     except FileNotFoundError:
         return None
 
@@ -54,14 +58,24 @@ def writeSha256(filename, sha256):
 
 
 def writeTimestamp(filename, ts):
-    with open(filename + ':shatag.ts:$DATA', 'w') as f:
-        f.write(formatTimestamp(ts))
-    os.utime(filename, ns=(ts, ts))
+    tsFilename = filename + ':shatag.ts:$DATA'
+    buffer = formatTimestamp(ts).encode('ascii')
+
+    try:
+        handle = win32file.CreateFileW(
+            tsFilename, win32file.GENERIC_WRITE, 0, None, win32file.CREATE_ALWAYS, 0, None)
+
+        err, _ = win32file.WriteFile(handle, buffer)
+        if err == 0:
+            wtimes = pywintypes.Time(ts)
+            win32file.SetFileTime(handle, None, wtimes, wtimes)
+    finally:
+        handle.Close()
 
 
 def getActualTimestamp(filename):
     result = os.stat(filename)
-    return result.st_mtime_ns
+    return int(result.st_mtime)
 
 
 def getActualSha256(filename):
